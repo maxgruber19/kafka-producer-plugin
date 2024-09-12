@@ -1,4 +1,4 @@
-# jenkins-kafka-producer
+# kafka-producer-plugin
 
 ## Introduction
 

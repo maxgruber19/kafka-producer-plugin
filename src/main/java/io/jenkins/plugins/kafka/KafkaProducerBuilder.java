@@ -11,12 +11,16 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import jenkins.tasks.SimpleBuildStep;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -28,17 +32,19 @@ public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
     private String topic;
     private List<KafkaProducerConfigParameter> producerConfigParameters;
     private Map<String, Object> producerConfig;
-    private KafkaProducer<String, String> producer;
+    private KafkaProducer<String, Object> producer;
+    private Object message;
 
     @DataBoundConstructor
-    public KafkaProducerBuilder(String bootstrapServers, String topic, List<KafkaProducerConfigParameter> producerConfigParameters) {
+    public KafkaProducerBuilder(String bootstrapServers, String topic, List<KafkaProducerConfigParameter> producerConfigParameters, Object message) {
         this.topic = topic;
-        this.bootstrapServers = bootstrapServers;
         this.producerConfigParameters = producerConfigParameters;
         this.producerConfig = producerConfigParameters.stream().collect(Collectors.toMap(KafkaProducerConfigParameter::getKey, KafkaProducerConfigParameter::getValue));
         this.producerConfig.putIfAbsent("key.serializer", StringSerializer.class.getName());
         this.producerConfig.putIfAbsent("value.serializer", StringSerializer.class.getName());
-        Thread.currentThread().setContextClassLoader(null);
+        this.producerConfig.putIfAbsent("bootstrap.servers", bootstrapServers);
+        this.producerConfig.putIfAbsent("retries", 5);
+        this.producerConfig.putIfAbsent("request.timeout.ms", 10000);
     }
 
     @DataBoundSetter
@@ -49,6 +55,11 @@ public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
     @DataBoundSetter
     public void setTopic(String topic) {
         this.topic = topic;
+    }
+
+    @DataBoundSetter
+    public void setMessage(Object message) {
+        this.message = message;
     }
 
     @DataBoundSetter
@@ -68,11 +79,21 @@ public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
         return topic;
     }
 
+    public Object getMessage() { return message; }
+
     @Override
     public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws InterruptedException, IOException {
         listener.getLogger().println("Producing message to " + bootstrapServers);
+        Thread.currentThread().setContextClassLoader(null);
         this.producer = new KafkaProducer<>(this.producerConfig);
+        ProducerRecord<String, Object> record = new ProducerRecord<>(topic, message);
+        try {
+            producer.send(record).get();
+        } catch (ExecutionException e) {
+            System.out.println(e.getMessage());
+            throw new RuntimeException(e);
+        }
     }
 
     @Symbol("produce")

@@ -16,4 +16,7 @@
     <f:entry title="Topic" field="topic">
         <f:textbox />
     </f:entry>
+    <f:entry title="Message" field="message">
+        <f:textbox />
+    </f:entry>
 </j:jelly>

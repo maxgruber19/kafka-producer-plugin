@@ -1,2 +1,2 @@
 _extends: .github
-tag-template: jenkins-kafka-producer-$NEXT_MINOR_VERSION
+tag-template: kafka-producer-plugin-$NEXT_MINOR_VERSION
