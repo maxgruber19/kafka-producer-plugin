@@ -11,7 +11,6 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -19,7 +18,6 @@ import java.util.stream.Collectors;
 
 import jenkins.tasks.SimpleBuildStep;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.jenkinsci.Symbol;
@@ -43,8 +41,6 @@ public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
         this.producerConfig.putIfAbsent("key.serializer", StringSerializer.class.getName());
         this.producerConfig.putIfAbsent("value.serializer", StringSerializer.class.getName());
         this.producerConfig.putIfAbsent("bootstrap.servers", bootstrapServers);
-        this.producerConfig.putIfAbsent("retries", 5);
-        this.producerConfig.putIfAbsent("request.timeout.ms", 10000);
     }
 
     @DataBoundSetter
@@ -82,12 +78,15 @@ public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
     public Object getMessage() { return message; }
 
     @Override
-    public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
-            throws InterruptedException, IOException {
+    public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
+
         listener.getLogger().println("Producing message to " + bootstrapServers);
+
         Thread.currentThread().setContextClassLoader(null);
         this.producer = new KafkaProducer<>(this.producerConfig);
+
         ProducerRecord<String, Object> record = new ProducerRecord<>(topic, message);
+
         try {
             producer.send(record).get();
         } catch (ExecutionException e) {
