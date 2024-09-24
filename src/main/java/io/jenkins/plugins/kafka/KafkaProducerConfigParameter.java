@@ -30,4 +30,9 @@ public class KafkaProducerConfigParameter {
     public Object getValue() {
         return value;
     }
+
+    @Override
+    public String toString() {
+        return "KafkaProducerConfigParameter [key=" + key + ", value=" + value + "]";
+    }
 }

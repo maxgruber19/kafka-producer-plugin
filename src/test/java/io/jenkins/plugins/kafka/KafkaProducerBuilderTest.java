@@ -29,7 +29,6 @@ public class KafkaProducerBuilderTest {
     private static Properties properties = new Properties();
     private static final String topic = "jenkins.builds.states";
     private static final String message = "build_successful";
-    private static final List<KafkaProducerConfigParameter> kafkaProducerConfigParameterList = new ArrayList<>();
 
     @Container
     private static final KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:6.2.1"))
@@ -56,12 +55,19 @@ public class KafkaProducerBuilderTest {
 
     @Test
     public void testConfigRoundtrip() throws Exception {
+
+        List<KafkaProducerConfigParameter> kafkaProducerConfigParameterList = new ArrayList<>();
+        kafkaProducerConfigParameterList.add(new KafkaProducerConfigParameter("test.property.1", "active"));
+        kafkaProducerConfigParameterList.add(new KafkaProducerConfigParameter("test.property.2", "inactive"));
+
+        KafkaProducerBuilder kafkaProducerBuilder = new KafkaProducerBuilder(kafka.getBootstrapServers(), topic, kafkaProducerConfigParameterList);
+
         FreeStyleProject project = jenkins.createFreeStyleProject();
-        //project.getBuildersList().add(new KafkaProducerBuilder(kafka.getBootstrapServers(), topic, kafkaProducerConfigParameterList , message));
+        project.getBuildersList().add(kafkaProducerBuilder);
         project = jenkins.configRoundtrip(project);
-        //jenkins.assertEqualDataBoundBeans(
-        //        new KafkaProducerBuilder(kafka.getBootstrapServers(), topic, kafkaProducerConfigParameterList , message), project.getBuildersList().get(0)
-        //);
+        jenkins.assertEqualDataBoundBeans(
+                kafkaProducerBuilder, project.getBuildersList().get(0)
+        );
     }
 
 }

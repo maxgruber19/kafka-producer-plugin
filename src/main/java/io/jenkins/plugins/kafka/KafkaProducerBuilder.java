@@ -9,14 +9,8 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-
 import jenkins.tasks.SimpleBuildStep;
+import lombok.Getter;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -24,6 +18,13 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+
+@Getter
 public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
 
     private String bootstrapServers;
@@ -34,9 +35,11 @@ public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
     private Object message;
 
     @DataBoundConstructor
-    public KafkaProducerBuilder(String bootstrapServers, String topic, List<KafkaProducerConfigParameter> producerConfigParameters, Object message) {
+    public KafkaProducerBuilder(String bootstrapServers, String topic, List<KafkaProducerConfigParameter> producerConfigParameters) {
         this.topic = topic;
         this.producerConfigParameters = producerConfigParameters;
+        //this.producerConfig = (null == producerConfigParameters)  ? new HashMap<>() :
+        //        producerConfigParameters.stream().collect(Collectors.toMap(KafkaProducerConfigParameter::getKey, KafkaProducerConfigParameter::getValue));
         this.producerConfig = producerConfigParameters.stream().collect(Collectors.toMap(KafkaProducerConfigParameter::getKey, KafkaProducerConfigParameter::getValue));
         this.producerConfig.putIfAbsent("key.serializer", StringSerializer.class.getName());
         this.producerConfig.putIfAbsent("value.serializer", StringSerializer.class.getName());
@@ -63,31 +66,15 @@ public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
         this.producerConfigParameters = producerConfigParameters;
     }
 
-    public List<KafkaProducerConfigParameter> getProducerConfigParameters() {
-        return producerConfigParameters;
-    }
-
-    public String getBootstrapServers() {
-        return bootstrapServers;
-    }
-
-    public String getTopic() {
-        return topic;
-    }
-
-    public Object getMessage() { return message; }
-
     @Override
     public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
 
         listener.getLogger().println("Producing message to " + bootstrapServers);
 
         Thread.currentThread().setContextClassLoader(null);
-        this.producer = new KafkaProducer<>(this.producerConfig);
 
-        ProducerRecord<String, Object> record = new ProducerRecord<>(topic, message);
-
-        try {
+        try (KafkaProducer<String, Object> producer = new KafkaProducer<>(this.producerConfig)){
+            ProducerRecord<String, Object> record = new ProducerRecord<>(topic, message);
             producer.send(record).get();
         } catch (ExecutionException e) {
             System.out.println(e.getMessage());
