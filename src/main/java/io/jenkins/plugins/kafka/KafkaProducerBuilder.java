@@ -19,6 +19,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -31,16 +32,15 @@ public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
     private String topic;
     private List<KafkaProducerConfigParameter> producerConfigParameters;
     private Map<String, Object> producerConfig;
-    private KafkaProducer<String, Object> producer;
     private Object message;
 
     @DataBoundConstructor
-    public KafkaProducerBuilder(String bootstrapServers, String topic, List<KafkaProducerConfigParameter> producerConfigParameters) {
+    public KafkaProducerBuilder(String bootstrapServers, String topic, List<KafkaProducerConfigParameter> producerConfigParameters, String message) {
         this.topic = topic;
+        this.bootstrapServers = bootstrapServers;
+        this.message = message;
         this.producerConfigParameters = producerConfigParameters;
-        //this.producerConfig = (null == producerConfigParameters)  ? new HashMap<>() :
-        //        producerConfigParameters.stream().collect(Collectors.toMap(KafkaProducerConfigParameter::getKey, KafkaProducerConfigParameter::getValue));
-        this.producerConfig = producerConfigParameters.stream().collect(Collectors.toMap(KafkaProducerConfigParameter::getKey, KafkaProducerConfigParameter::getValue));
+        this.producerConfig = (null == producerConfigParameters)  ? new HashMap<>() : producerConfigParameters.stream().collect(Collectors.toMap(KafkaProducerConfigParameter::getKey, KafkaProducerConfigParameter::getValue));
         this.producerConfig.putIfAbsent("key.serializer", StringSerializer.class.getName());
         this.producerConfig.putIfAbsent("value.serializer", StringSerializer.class.getName());
         this.producerConfig.putIfAbsent("bootstrap.servers", bootstrapServers);
@@ -71,11 +71,13 @@ public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
 
         listener.getLogger().println("Producing message to " + bootstrapServers);
 
+        ClassLoader original = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(null);
 
         try (KafkaProducer<String, Object> producer = new KafkaProducer<>(this.producerConfig)){
             ProducerRecord<String, Object> record = new ProducerRecord<>(topic, message);
             producer.send(record).get();
+            Thread.currentThread().setContextClassLoader(original);
         } catch (ExecutionException e) {
             System.out.println(e.getMessage());
             throw new RuntimeException(e);

@@ -60,7 +60,7 @@ public class KafkaProducerBuilderTest {
         kafkaProducerConfigParameterList.add(new KafkaProducerConfigParameter("test.property.1", "active"));
         kafkaProducerConfigParameterList.add(new KafkaProducerConfigParameter("test.property.2", "inactive"));
 
-        KafkaProducerBuilder kafkaProducerBuilder = new KafkaProducerBuilder(kafka.getBootstrapServers(), topic, kafkaProducerConfigParameterList);
+        KafkaProducerBuilder kafkaProducerBuilder = new KafkaProducerBuilder(kafka.getBootstrapServers(), topic, kafkaProducerConfigParameterList, "test");
 
         FreeStyleProject project = jenkins.createFreeStyleProject();
         project.getBuildersList().add(kafkaProducerBuilder);
