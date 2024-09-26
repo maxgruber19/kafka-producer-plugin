@@ -11,7 +11,7 @@
 
   <groupId>io.jenkins.plugins</groupId>
   <artifactId>kafka-producer-plugin</artifactId>
-  <version>0.0.1</version>
+  <version>${revision}${changelist}</version>
   <packaging>hpi</packaging>
 
   <name>kafka-producer-plugin</name>
@@ -25,7 +25,7 @@
   <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
     <connection>scm:git:https://github.com/maxgruber19/kafka-producer-plugin</connection>
     <developerConnection>scm:git:https://github.com/maxgruber19/kafka-producer-plugin</developerConnection>
-    <tag>kafka-producer-plugin-0.0.1</tag>
+    <tag>@{project.version}</tag>
     <url>https://github.com/maxgruber19/kafka-producer-plugin</url>
   </scm>
 
@@ -38,7 +38,7 @@
   </distributionManagement>
 
   <properties>
-    <revision>0.0.1</revision>
+    <revision>0.0.2</revision>
     <changelist>-SNAPSHOT</changelist>
 
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
