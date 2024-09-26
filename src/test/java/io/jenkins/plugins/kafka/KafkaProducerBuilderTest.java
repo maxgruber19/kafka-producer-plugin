@@ -16,8 +16,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
@@ -56,10 +56,8 @@ public class KafkaProducerBuilderTest {
     @Test
     public void testConfigRoundtrip() throws Exception {
 
-        Map kafkaProducerConfigParameterList = new HashMap();
-        kafkaProducerConfigParameterList.put("test", "test");
-
-        KafkaProducerBuilder kafkaProducerBuilder = new KafkaProducerBuilder(kafka.getBootstrapServers(), topic, "", "test");
+        List<KafkaProducerBuilder.KafkaProducerConfigParameter> kafkaProducerConfigParameterList = new ArrayList<>();
+        KafkaProducerBuilder kafkaProducerBuilder = new KafkaProducerBuilder(kafka.getBootstrapServers(), topic, kafkaProducerConfigParameterList, "test");
 
         FreeStyleProject project = jenkins.createFreeStyleProject();
         project.getBuildersList().add(kafkaProducerBuilder);
@@ -67,6 +65,7 @@ public class KafkaProducerBuilderTest {
         jenkins.assertEqualDataBoundBeans(
                 kafkaProducerBuilder, project.getBuildersList().get(0)
         );
+
     }
 
 }
