@@ -1,6 +1,11 @@
 package io.jenkins.plugins.kafka;
 
 import hudson.model.FreeStyleProject;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import lombok.extern.java.Log;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
@@ -14,12 +19,6 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
-
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.ExecutionException;
 
 @Log
 @Testcontainers
@@ -40,32 +39,29 @@ public class KafkaProducerBuilderTest {
     @Rule
     public JenkinsRule jenkins = new JenkinsRule();
 
-
     @BeforeClass
     public static void startKafka() throws InterruptedException, ExecutionException {
         kafka.start();
         properties.put("bootstrap.servers", kafka.getBootstrapServers());
 
         log.info("creating topic " + topic);
-        kafkaAdmin =  Admin.create(properties);
-        CreateTopicsResult result = kafkaAdmin.createTopics(java.util.List.of(new NewTopic("jenkins.builds.states", 1 , (short) 1)));
+        kafkaAdmin = Admin.create(properties);
+        CreateTopicsResult result =
+                kafkaAdmin.createTopics(java.util.List.of(new NewTopic("jenkins.builds.states", 1, (short) 1)));
         log.info("topics found in cluster: " + kafkaAdmin.listTopics().names().get());
-
     }
 
     @Test
     public void testConfigRoundtrip() throws Exception {
 
         List<KafkaProducerBuilder.KafkaProducerConfigParameter> kafkaProducerConfigParameterList = new ArrayList<>();
-        KafkaProducerBuilder kafkaProducerBuilder = new KafkaProducerBuilder(kafka.getBootstrapServers(), topic, kafkaProducerConfigParameterList, "test");
+        KafkaProducerBuilder kafkaProducerBuilder =
+                new KafkaProducerBuilder(kafka.getBootstrapServers(), topic, kafkaProducerConfigParameterList, "test");
 
         FreeStyleProject project = jenkins.createFreeStyleProject();
         project.getBuildersList().add(kafkaProducerBuilder);
         project = jenkins.configRoundtrip(project);
         jenkins.assertEqualDataBoundBeans(
-                kafkaProducerBuilder, project.getBuildersList().get(0)
-        );
-
+                kafkaProducerBuilder, project.getBuildersList().get(0));
     }
-
 }

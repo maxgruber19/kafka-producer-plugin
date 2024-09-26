@@ -11,6 +11,12 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import jenkins.tasks.SimpleBuildStep;
 import lombok.Getter;
 import net.sf.json.JSONObject;
@@ -22,13 +28,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-
 @Getter
 public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
 
@@ -38,7 +37,11 @@ public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
     private Object message;
 
     @DataBoundConstructor
-    public KafkaProducerBuilder(String bootstrapServers, String topic, List<KafkaProducerConfigParameter> producerConfigParameters, String message) {
+    public KafkaProducerBuilder(
+            String bootstrapServers,
+            String topic,
+            List<KafkaProducerConfigParameter> producerConfigParameters,
+            String message) {
         if (null != topic) {
             this.topic = topic;
         }
@@ -74,7 +77,8 @@ public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
     }
 
     @Override
-    public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
+    public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
+            throws InterruptedException, IOException {
 
         // https://stackoverflow.com/questions/37363119/kafka-producer-org-apache-kafka-common-serialization-stringserializer-could-no
         ClassLoader original = Thread.currentThread().getContextClassLoader();
@@ -84,11 +88,10 @@ public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
         producerConfig.putIfAbsent("bootstrap.servers", bootstrapServers);
         producerConfig.putIfAbsent("key.serializer", StringSerializer.class.getName());
         producerConfig.putIfAbsent("value.serializer", StringSerializer.class.getName());
-        producerConfigParameters.forEach(parameter ->
-                producerConfig.putIfAbsent(parameter.getKey(), parameter.getValue())
-        );
+        producerConfigParameters.forEach(
+                parameter -> producerConfig.putIfAbsent(parameter.getKey(), parameter.getValue()));
 
-        try (KafkaProducer<String, Object> producer = new KafkaProducer<>(producerConfig)){
+        try (KafkaProducer<String, Object> producer = new KafkaProducer<>(producerConfig)) {
             ProducerRecord<String, Object> record = new ProducerRecord<>(topic, message);
             producer.send(record).get();
 
@@ -145,7 +148,5 @@ public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
         public String toString() {
             return "KafkaProducerConfigParameter [key=" + key + ", value=" + value + "]";
         }
-
     }
-
 }
