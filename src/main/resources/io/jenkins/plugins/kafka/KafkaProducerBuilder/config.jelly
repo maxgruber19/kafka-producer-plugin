@@ -4,14 +4,7 @@
         <f:textbox />
     </f:entry>
     <f:entry title="Producer Configs" field="producerConfigParameters">
-        <f:repeatable var="config" name="producerConfigParameters">
-            <f:entry title="Key" field="key">
-                <f:textbox/>
-            </f:entry>
-            <f:entry title="Value" field="value">
-                <f:textbox/>
-            </f:entry>
-        </f:repeatable>
+        <f:textbox />
     </f:entry>
     <f:entry title="Topic" field="topic">
         <f:textbox />

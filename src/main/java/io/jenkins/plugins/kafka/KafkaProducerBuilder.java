@@ -13,37 +13,29 @@ import jenkins.tasks.SimpleBuildStep;
 import lombok.Getter;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 @Getter
 public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
 
     private String bootstrapServers;
     private String topic;
-    private List<KafkaProducerConfigParameter> producerConfigParameters;
-    private Map<String, Object> producerConfig;
+    private String producerConfigParameters;
     private Object message;
 
     @DataBoundConstructor
-    public KafkaProducerBuilder(String bootstrapServers, String topic, List<KafkaProducerConfigParameter> producerConfigParameters, String message) {
+    public KafkaProducerBuilder(String bootstrapServers, String topic, String producerConfigParameters, String message) {
         this.topic = topic;
         this.bootstrapServers = bootstrapServers;
         this.message = message;
         this.producerConfigParameters = producerConfigParameters;
-        this.producerConfig = (null == producerConfigParameters)  ? new HashMap<>() : producerConfigParameters.stream().collect(Collectors.toMap(KafkaProducerConfigParameter::getKey, KafkaProducerConfigParameter::getValue));
-        this.producerConfig.putIfAbsent("key.serializer", StringSerializer.class.getName());
-        this.producerConfig.putIfAbsent("value.serializer", StringSerializer.class.getName());
-        this.producerConfig.putIfAbsent("bootstrap.servers", bootstrapServers);
     }
 
     @DataBoundSetter
@@ -62,7 +54,7 @@ public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
     }
 
     @DataBoundSetter
-    public void setProducerConfigParameters(List<KafkaProducerConfigParameter> producerConfigParameters) {
+    public void setProducerConfigParameters(String producerConfigParameters) {
         this.producerConfigParameters = producerConfigParameters;
     }
 
@@ -71,10 +63,12 @@ public class KafkaProducerBuilder extends Builder implements SimpleBuildStep {
 
         listener.getLogger().println("Producing message to " + bootstrapServers);
 
+        Map<String, Object> producerConfig = new HashMap<>();
+
         ClassLoader original = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(null);
 
-        try (KafkaProducer<String, Object> producer = new KafkaProducer<>(this.producerConfig)){
+        try (KafkaProducer<String, Object> producer = new KafkaProducer<>(producerConfig)){
             ProducerRecord<String, Object> record = new ProducerRecord<>(topic, message);
             producer.send(record).get();
             Thread.currentThread().setContextClassLoader(original);
